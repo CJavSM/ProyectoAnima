@@ -1,12 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import auth_routes
+from app.routes import auth_routes, emotion_routes, music_routes
 import os
 from dotenv import load_dotenv
-from app.config.database import Base, engine, SessionLocal
+from app.config.database import Base, engine
 import logging
 
 load_dotenv()
+
+# Configurar logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Crear aplicación FastAPI
 app = FastAPI(
@@ -30,6 +34,8 @@ app.add_middleware(
 
 # Incluir rutas
 app.include_router(auth_routes.router)
+app.include_router(emotion_routes.router)
+app.include_router(music_routes.router)
 
 # Ruta raíz
 @app.get("/")
@@ -55,9 +61,9 @@ def on_startup():
         # Loggear URL de conexión (ocultando la contraseña)
         try:
             db_url_masked = engine.url.render_as_string(hide_password=True)
-            logging.info(f"DB URL: {db_url_masked}")
+            logger.info(f"DB URL: {db_url_masked}")
         except Exception:
-            logging.info("DB URL: <no disponible>")
+            logger.info("DB URL: <no disponible>")
 
         # Probar conexión simple
         with engine.connect() as conn:
@@ -65,9 +71,10 @@ def on_startup():
 
         # Crear tablas
         Base.metadata.create_all(bind=engine)
+        logger.info("Base de datos inicializada correctamente")
+        
     except Exception as e:
-        # No interrumpir el arranque, pero dejar rastro en logs
-        logging.exception("Error creando tablas en el arranque: %s", e)
+        logger.exception("Error creando tablas en el arranque: %s", e)
 
 # Health DB endpoint
 @app.get("/health/db")
@@ -77,7 +84,7 @@ def health_db():
             result = conn.exec_driver_sql("SELECT 1").scalar()
         return {"status": "ok", "result": result}
     except Exception as e:
-        logging.exception("DB health check failed: %s", e)
+        logger.exception("DB health check failed: %s", e)
         return {"status": "error", "error": str(e)}
 
 if __name__ == "__main__":
