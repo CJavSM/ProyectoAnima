@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import emotionService from '../../services/emotionService';
+import MusicRecommendations from '../MusicRecommendations/MusicRecommendations';
 import './Home.css';
 
 const Home = () => {
@@ -16,6 +17,7 @@ const Home = () => {
   const [error, setError] = useState('');
   const [showCamera, setShowCamera] = useState(false);
   const [stream, setStream] = useState(null);
+  const [showMusicModal, setShowMusicModal] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -163,7 +165,13 @@ const Home = () => {
   };
 
   const handleGetRecommendations = () => {
-    console.log('Obteniendo recomendaciones musicales...');
+    if (result && result.emotion) {
+      setShowMusicModal(true);
+    }
+  };
+
+  const handleCloseMusicModal = () => {
+    setShowMusicModal(false);
   };
 
   return (
@@ -383,6 +391,15 @@ const Home = () => {
           )}
         </div>
       </div>
+
+      {/* Modal de recomendaciones musicales */}
+      {showMusicModal && result && (
+        <MusicRecommendations
+          emotion={result.emotion}
+          emotionColor={result.color}
+          onClose={handleCloseMusicModal}
+        />
+      )}
     </div>
   );
 };

@@ -149,14 +149,103 @@
 .btn-upload {
   display: inline-block;
   cursor: pointer;
-  padding: 0.75rem 2rem;
+  padding: 0.75rem 1.5rem;
   font-size: 1rem;
+  width: 100%;
 }
 
-.upload-hint {
-  margin-top: 1rem;
-  font-size: 0.875rem;
-  color: var(--gray-500);
+.btn-secondary {
+  background-color: var(--gray-200);
+  color: var(--gray-700);
+}
+
+.btn-secondary:hover {
+  background-color: var(--gray-300);
+}
+
+/* Camera Section */
+.camera-section {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  align-items: center;
+}
+
+.camera-card {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 42rem;
+}
+
+.camera-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.camera-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.btn-close-camera {
+  background: var(--gray-100);
+  border: none;
+  border-radius: 50%;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.125rem;
+  color: var(--gray-700);
+  transition: all 0.2s;
+}
+
+.btn-close-camera:hover {
+  background: var(--gray-200);
+  transform: scale(1.1);
+}
+
+.camera-container {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto 1rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: var(--gray-900);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+  max-height: calc(100vh - 20rem);
+}
+
+.camera-video {
+  width: 100%;
+  height: auto;
+  display: block;
+  transform: scaleX(-1); /* Efecto espejo */
+  max-height: calc(100vh - 20rem);
+  object-fit: cover;
+}
+
+.camera-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.btn-capture {
+  flex: 1;
+  max-width: 14rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 /* Preview Section */
