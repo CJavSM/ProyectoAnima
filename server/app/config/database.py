@@ -4,21 +4,30 @@ from sqlalchemy.orm import sessionmaker
 import os
 from dotenv import load_dotenv
 
-# Forzar que los valores de server/.env sobrescriban variables existentes
+# Cargar variables de entorno
 load_dotenv(override=True)
 
-# Leer DATABASE_URL del entorno y asegurar driver psycopg v3
-_raw_url = os.getenv("DATABASE_URL", "").strip()
-if not _raw_url:
-    raise RuntimeError("DATABASE_URL no está configurado en el entorno (.env)")
+# Construir DATABASE_URL desde componentes individuales
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = os.getenv("DB_PORT", "55432")
+DB_USER = os.getenv("DB_USER", "anima_user")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "anima_password")
+DB_NAME = os.getenv("DB_NAME", "anima_db")
 
-# Forzar el uso del driver psycopg v3 si el esquema es genérico 'postgresql://'
-if _raw_url.startswith("postgresql://") and "+" not in _raw_url.split(":", 1)[0]:
-    DATABASE_URL = _raw_url.replace("postgresql://", "postgresql+psycopg://", 1)
-else:
-    DATABASE_URL = _raw_url
+# Construir URL con el driver psycopg (versión 3)
+DATABASE_URL = f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+print(f"📊 Conectando a base de datos en: {DB_HOST}:{DB_PORT}/{DB_NAME}")
+
+# Crear engine con configuración optimizada
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,  # Verifica conexiones antes de usarlas
+    pool_size=5,         # Tamaño del pool de conexiones
+    max_overflow=10,     # Conexiones extra permitidas
+    echo=False           # Cambiar a True para debug SQL
+)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
@@ -30,3 +39,15 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# Función para verificar conexión
+def check_db_connection():
+    """Verifica que la conexión a la base de datos funcione"""
+    try:
+        with engine.connect() as conn:
+            result = conn.execute("SELECT 1")
+            print("✅ Conexión a PostgreSQL exitosa")
+            return True
+    except Exception as e:
+        print(f"❌ Error de conexión a PostgreSQL: {str(e)}")
+        return False

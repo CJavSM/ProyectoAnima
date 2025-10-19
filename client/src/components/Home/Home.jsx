@@ -14,6 +14,7 @@ const Home = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState(null);
+  const [analysisId, setAnalysisId] = useState(null);
   const [error, setError] = useState('');
   const [showCamera, setShowCamera] = useState(false);
   const [stream, setStream] = useState(null);
@@ -74,7 +75,10 @@ const Home = () => {
       const response = await emotionService.analyzeEmotion(selectedImage);
       
       if (response.success) {
-        const { dominant_emotion, all_emotions } = response.data;
+        const { dominant_emotion, all_emotions, analysis_id } = response.data;
+        
+        // Guardar el analysis_id para asociarlo con la playlist
+        setAnalysisId(analysis_id);
         
         setResult({
           emotion: dominant_emotion.type,
@@ -102,6 +106,7 @@ const Home = () => {
     setResult(null);
     setError('');
     setShowCamera(false);
+    setAnalysisId(null);
     stopCamera();
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -178,27 +183,35 @@ const Home = () => {
     <div className="home">
       <nav className="navbar">
         <div className="navbar-container">
-          <div className="navbar-content">
-            <h1 className="navbar-brand">Ánima</h1>
+            <div className="navbar-content">
+            <h1 className="navbar-brand" onClick={() => navigate('/home')} style={{ cursor: 'pointer' }}>
+                Ánima
+            </h1>
             <div className="navbar-menu">
-              <button onClick={() => navigate('/home')} className="nav-link active">
+                <button onClick={() => navigate('/home')} className="nav-link active">
                 Analizar
-              </button>
-              <button onClick={() => navigate('/dashboard')} className="nav-link">
+                </button>
+                <button onClick={() => navigate('/history')} className="nav-link">
+                Historial
+                </button>
+                <button onClick={() => navigate('/playlists')} className="nav-link">
+                Playlists
+                </button>
+                <button onClick={() => navigate('/dashboard')} className="nav-link">
                 Dashboard
-              </button>
+                </button>
             </div>
             <div className="navbar-user">
-              <span className="navbar-username">
+                <span className="navbar-username">
                 <span>{user?.username || user?.first_name}</span>
-              </span>
-              <button onClick={handleLogout} className="btn-logout">
+                </span>
+                <button onClick={handleLogout} className="btn-logout">
                 Cerrar Sesión
-              </button>
+                </button>
             </div>
-          </div>
+            </div>
         </div>
-      </nav>
+        </nav>
 
       <div className="home-content">
         <div className="home-header">
@@ -397,9 +410,11 @@ const Home = () => {
         <MusicRecommendations
           emotion={result.emotion}
           emotionColor={result.color}
+          analysisId={analysisId}
           onClose={handleCloseMusicModal}
         />
       )}
+
     </div>
   );
 };

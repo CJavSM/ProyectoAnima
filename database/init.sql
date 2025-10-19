@@ -74,3 +74,60 @@ VALUES (
 COMMENT ON TABLE users IS 'Tabla principal de usuarios del sistema';
 COMMENT ON TABLE emotion_analyses IS 'Registro de análisis de emociones realizados por los usuarios';
 COMMENT ON TABLE music_recommendations IS 'Recomendaciones musicales basadas en análisis de emociones';
+
+ALTER TABLE emotion_analyses 
+ADD COLUMN IF NOT EXISTS photo_metadata JSONB;
+
+-- Tabla para guardar playlists favoritas del usuario
+CREATE TABLE IF NOT EXISTS saved_playlists (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    analysis_id UUID REFERENCES emotion_analyses(id) ON DELETE SET NULL,
+    playlist_name VARCHAR(255) NOT NULL,
+    emotion VARCHAR(50) NOT NULL,
+    description TEXT,
+    tracks JSONB NOT NULL,
+    music_params JSONB,
+    is_favorite BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Índices para saved_playlists
+CREATE INDEX IF NOT EXISTS idx_saved_playlists_user_id ON saved_playlists(user_id);
+CREATE INDEX IF NOT EXISTS idx_saved_playlists_emotion ON saved_playlists(emotion);
+CREATE INDEX IF NOT EXISTS idx_saved_playlists_created_at ON saved_playlists(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_saved_playlists_is_favorite ON saved_playlists(is_favorite);
+
+-- Trigger para actualizar updated_at en saved_playlists
+CREATE TRIGGER update_saved_playlists_updated_at BEFORE UPDATE ON saved_playlists
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Vista para historial completo del usuario
+CREATE OR REPLACE VIEW user_history AS
+SELECT 
+    ea.id as analysis_id,
+    ea.user_id,
+    ea.dominant_emotion,
+    ea.confidence,
+    ea.emotion_details,
+    ea.photo_metadata,
+    ea.created_at as analyzed_at,
+    sp.id as saved_playlist_id,
+    sp.playlist_name,
+    sp.is_favorite,
+    sp.tracks as playlist_tracks,
+    sp.music_params,
+    mr.spotify_playlist_id,
+    CASE 
+        WHEN sp.id IS NOT NULL THEN true 
+        ELSE false 
+    END as has_saved_playlist
+FROM emotion_analyses ea
+LEFT JOIN saved_playlists sp ON ea.id = sp.analysis_id
+LEFT JOIN music_recommendations mr ON ea.id = mr.analysis_id
+ORDER BY ea.created_at DESC;
+
+-- Comentarios
+COMMENT ON TABLE saved_playlists IS 'Playlists guardadas por los usuarios';
+COMMENT ON VIEW user_history IS 'Vista consolidada del historial de análisis y playlists del usuario';

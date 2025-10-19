@@ -1,14 +1,22 @@
 import { useState, useEffect } from 'react';
 import musicService from '../../services/musicService';
+import historyService from '../../services/historyService';
 import emotionService from '../../services/emotionService';
 import './MusicRecommendations.css';
 
-const MusicRecommendations = ({ emotion, emotionColor, onClose }) => {
+const MusicRecommendations = ({ emotion, emotionColor, analysisId, onClose }) => {
   const [recommendations, setRecommendations] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [playingPreview, setPlayingPreview] = useState(null);
   const [audioElement, setAudioElement] = useState(null);
+  
+  // Estados para guardar playlist
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [playlistName, setPlaylistName] = useState('');
+  const [playlistDescription, setPlaylistDescription] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     loadRecommendations();
@@ -21,6 +29,16 @@ const MusicRecommendations = ({ emotion, emotionColor, onClose }) => {
       }
     };
   }, [emotion]);
+
+  // Generar nombre por defecto cuando se abre el diálogo
+  useEffect(() => {
+    if (showSaveDialog && !playlistName && recommendations) {
+      const emotionSpanish = emotionService.translateEmotion(emotion);
+      const date = new Date().toLocaleDateString('es-GT');
+      setPlaylistName(`Playlist ${emotionSpanish} - ${date}`);
+      setPlaylistDescription(recommendations.playlist_description || '');
+    }
+  }, [showSaveDialog]);
 
   const loadRecommendations = async () => {
     setLoading(true);
@@ -43,19 +61,16 @@ const MusicRecommendations = ({ emotion, emotionColor, onClose }) => {
       return;
     }
 
-    // Si está reproduciendo este track, pausar
     if (playingPreview === track.id) {
       audioElement.pause();
       setPlayingPreview(null);
       return;
     }
 
-    // Si hay otro audio reproduciéndose, detenerlo
     if (audioElement) {
       audioElement.pause();
     }
 
-    // Crear nuevo audio y reproducir
     const audio = new Audio(track.preview_url);
     audio.volume = 0.5;
     
@@ -68,6 +83,41 @@ const MusicRecommendations = ({ emotion, emotionColor, onClose }) => {
 
   const handleOpenInSpotify = (url) => {
     musicService.openInSpotify(url);
+  };
+
+  const handleSavePlaylist = async () => {
+    if (!playlistName.trim()) {
+      alert('Por favor ingresa un nombre para la playlist');
+      return;
+    }
+
+    setSaving(true);
+
+    const playlistData = {
+      analysis_id: analysisId || null,
+      playlist_name: playlistName.trim(),
+      emotion: emotion,
+      description: playlistDescription.trim() || null,
+      tracks: recommendations.tracks,
+      music_params: recommendations.music_params,
+      is_favorite: false
+    };
+
+    const result = await historyService.savePlaylist(playlistData);
+
+    if (result.success) {
+      setSaveSuccess(true);
+      setTimeout(() => {
+        setShowSaveDialog(false);
+        setSaveSuccess(false);
+        setPlaylistName('');
+        setPlaylistDescription('');
+      }, 2000);
+    } else {
+      alert(`Error al guardar: ${result.error}`);
+    }
+
+    setSaving(false);
   };
 
   if (loading) {
@@ -122,6 +172,14 @@ const MusicRecommendations = ({ emotion, emotionColor, onClose }) => {
             <div className="stat-item">
               <span className="stat-label">Géneros</span>
               <span className="stat-value">{recommendations?.genres_used.join(', ')}</span>
+            </div>
+            <div className="stat-item stat-action">
+              <button 
+                onClick={() => setShowSaveDialog(true)}
+                className="btn-save-playlist"
+              >
+                💾 Guardar Playlist
+              </button>
             </div>
           </div>
 
@@ -214,6 +272,62 @@ const MusicRecommendations = ({ emotion, emotionColor, onClose }) => {
             ))}
           </div>
         </div>
+
+        {/* Diálogo para guardar playlist */}
+        {showSaveDialog && (
+          <div className="save-dialog-overlay" onClick={() => setShowSaveDialog(false)}>
+            <div className="save-dialog" onClick={(e) => e.stopPropagation()}>
+              <h3 className="save-dialog-title">💾 Guardar Playlist</h3>
+              
+              {saveSuccess ? (
+                <div className="save-success">
+                  <p className="success-icon">✅</p>
+                  <p>¡Playlist guardada exitosamente!</p>
+                </div>
+              ) : (
+                <>
+                  <div className="save-dialog-field">
+                    <label>Nombre de la Playlist *</label>
+                    <input
+                      type="text"
+                      value={playlistName}
+                      onChange={(e) => setPlaylistName(e.target.value)}
+                      placeholder="Ej: Mi playlist feliz"
+                      maxLength={255}
+                    />
+                  </div>
+
+                  <div className="save-dialog-field">
+                    <label>Descripción (opcional)</label>
+                    <textarea
+                      value={playlistDescription}
+                      onChange={(e) => setPlaylistDescription(e.target.value)}
+                      placeholder="Agrega una descripción..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="save-dialog-actions">
+                    <button 
+                      onClick={handleSavePlaylist}
+                      disabled={saving || !playlistName.trim()}
+                      className="btn btn-primary"
+                    >
+                      {saving ? 'Guardando...' : 'Guardar'}
+                    </button>
+                    <button 
+                      onClick={() => setShowSaveDialog(false)}
+                      className="btn btn-secondary"
+                      disabled={saving}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

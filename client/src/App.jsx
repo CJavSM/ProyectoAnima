@@ -4,6 +4,8 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Home from './components/Home/Home';
 import Dashboard from './components/Dashboard/Dashboard';
+import HistoryPage from './components/HistoryPage/HistoryPage';
+import PlaylistsPage from './components/PlaylistsPage/PlaylistsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -32,6 +34,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <ProtectedRoute>
+                <HistoryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/playlists"
+            element={
+              <ProtectedRoute>
+                <PlaylistsPage />
               </ProtectedRoute>
             }
           />
