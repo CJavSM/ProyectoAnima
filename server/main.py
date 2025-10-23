@@ -21,16 +21,42 @@ app = FastAPI(
     redoc_url="/api/redoc"
 )
 
-# Configurar CORS
-origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
+# ============================================
+# CORS CONFIGURADO CORRECTAMENTE
+# ============================================
+
+# Obtener orígenes permitidos
+origins_env = os.getenv("CORS_ORIGINS", "")
+environment = os.getenv("ENVIRONMENT", "development")
+
+# En desarrollo, ser MUY permisivo
+if environment == "development":
+    # En desarrollo permitir cualquier origen para evitar problemas de preflight
+    origins = ["*"]
+    logger.warning("⚠️  CORS en modo DESARROLLO - aceptando cualquier origen (temporal)")
+else:
+    # En producción, usar los orígenes del .env
+    origins = origins_env.split(",") if origins_env else []
+    logger.info(f"CORS configurado para: {origins}")
+
+# IMPORTANTE: Configurar CORS ANTES de las rutas
+# Si usamos '*' como origen, no podemos permitir credentials por razones de seguridad
+allow_credentials_flag = False if origins == ["*"] else True
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=allow_credentials_flag,
+    allow_methods=["*"],  # Permite todos los métodos (GET, POST, OPTIONS, etc.)
+    allow_headers=["*"],  # Permite todos los headers
+    expose_headers=["*"],  # Expone todos los headers en la respuesta
 )
+
+logger.info(f"✅ CORS configurado con {len(origins)} orígenes permitidos")
+
+# ============================================
+# INCLUIR RUTAS
+# ============================================
 
 # Incluir rutas
 app.include_router(auth_routes.router)
@@ -44,7 +70,8 @@ def read_root():
     return {
         "message": "Bienvenido a Ánima API",
         "version": "1.0.0",
-        "docs": "/api/docs"
+        "docs": "/api/docs",
+        "environment": environment
     }
 
 # Health check
@@ -59,23 +86,30 @@ def health_check():
 @app.on_event("startup")
 def on_startup():
     try:
+        logger.info("🚀 Iniciando servidor Ánima API...")
+        
         # Loggear URL de conexión (ocultando la contraseña)
         try:
             db_url_masked = engine.url.render_as_string(hide_password=True)
-            logger.info(f"DB URL: {db_url_masked}")
+            logger.info(f"📊 DB URL: {db_url_masked}")
         except Exception:
-            logger.info("DB URL: <no disponible>")
+            logger.info("📊 DB URL: <no disponible>")
 
         # Probar conexión simple
         with engine.connect() as conn:
             conn.exec_driver_sql("SELECT 1")
+        
+        logger.info("📊 Para verificar la conexión a la base de datos, visita /health/db")
 
         # Crear tablas
         Base.metadata.create_all(bind=engine)
-        logger.info("Base de datos inicializada correctamente")
+        logger.info("✅ Base de datos inicializada correctamente")
+        
+        logger.info(f"✅ Servidor iniciado correctamente en http://0.0.0.0:8000")
+        logger.info(f"📚 Documentación disponible en http://0.0.0.0:8000/api/docs")
         
     except Exception as e:
-        logger.exception("Error creando tablas en el arranque: %s", e)
+        logger.exception("❌ Error creando tablas en el arranque: %s", e)
 
 # Health DB endpoint
 @app.get("/health/db")
@@ -85,7 +119,7 @@ def health_db():
             result = conn.exec_driver_sql("SELECT 1").scalar()
         return {"status": "ok", "result": result}
     except Exception as e:
-        logger.exception("DB health check failed: %s", e)
+        logger.exception("❌ DB health check failed: %s", e)
         return {"status": "error", "error": str(e)}
 
 if __name__ == "__main__":

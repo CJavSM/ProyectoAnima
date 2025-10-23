@@ -9,7 +9,7 @@ load_dotenv(override=True)
 
 # Construir DATABASE_URL desde componentes individuales
 DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = os.getenv("DB_PORT", "55432")
+DB_PORT = os.getenv("DB_PORT", "15432")
 DB_USER = os.getenv("DB_USER", "anima_user")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "anima_password")
 DB_NAME = os.getenv("DB_NAME", "anima_db")
