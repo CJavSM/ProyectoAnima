@@ -14,7 +14,15 @@ CREATE TABLE users (
     is_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP WITH TIME ZONE
+    last_login TIMESTAMP WITH TIME ZONE,
+    spotify_id VARCHAR(255) UNIQUE,
+    spotify_email VARCHAR(255),
+    spotify_display_name VARCHAR(255),
+    spotify_access_token TEXT,
+    spotify_refresh_token TEXT,
+    spotify_token_expires_at TIMESTAMP WITH TIME ZONE,
+    spotify_connected BOOLEAN DEFAULT FALSE,
+    spotify_connected_at TIMESTAMP WITH TIME ZONE
 );
 
 -- Tabla de análisis de emociones
@@ -132,19 +140,6 @@ ORDER BY ea.created_at DESC;
 -- Fecha: 2025-01-XX
 -- Descripción: Permite autenticación con Spotify y guardar playlists en cuentas de Spotify
 
--- Agregar columnas de Spotify a la tabla users
-ALTER TABLE users
-ADD COLUMN IF NOT EXISTS spotify_id VARCHAR(255) UNIQUE,
-ADD COLUMN IF NOT EXISTS spotify_email VARCHAR(255),
-ADD COLUMN IF NOT EXISTS spotify_display_name VARCHAR(255),
-ADD COLUMN IF NOT EXISTS spotify_access_token TEXT,
-ADD COLUMN IF NOT EXISTS spotify_refresh_token TEXT,
-ADD COLUMN IF NOT EXISTS spotify_token_expires_at TIMESTAMP WITH TIME ZONE,
-ADD COLUMN IF NOT EXISTS spotify_connected BOOLEAN DEFAULT FALSE,
-ADD COLUMN IF NOT EXISTS spotify_connected_at TIMESTAMP WITH TIME ZONE;
-
--- Modificar password_hash para que sea nullable (usuarios con Spotify pueden no tener contraseña)
-ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
 
 -- Crear índice para búsquedas por spotify_id
 CREATE INDEX IF NOT EXISTS idx_users_spotify_id ON users(spotify_id);
