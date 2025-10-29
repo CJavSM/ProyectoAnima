@@ -128,6 +128,34 @@ LEFT JOIN saved_playlists sp ON ea.id = sp.analysis_id
 LEFT JOIN music_recommendations mr ON ea.id = mr.analysis_id
 ORDER BY ea.created_at DESC;
 
+-- Migration: Agregar campos de Spotify al modelo User
+-- Fecha: 2025-01-XX
+-- Descripción: Permite autenticación con Spotify y guardar playlists en cuentas de Spotify
+
+-- Agregar columnas de Spotify a la tabla users
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS spotify_id VARCHAR(255) UNIQUE,
+ADD COLUMN IF NOT EXISTS spotify_email VARCHAR(255),
+ADD COLUMN IF NOT EXISTS spotify_display_name VARCHAR(255),
+ADD COLUMN IF NOT EXISTS spotify_access_token TEXT,
+ADD COLUMN IF NOT EXISTS spotify_refresh_token TEXT,
+ADD COLUMN IF NOT EXISTS spotify_token_expires_at TIMESTAMP WITH TIME ZONE,
+ADD COLUMN IF NOT EXISTS spotify_connected BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS spotify_connected_at TIMESTAMP WITH TIME ZONE;
+
+-- Modificar password_hash para que sea nullable (usuarios con Spotify pueden no tener contraseña)
+ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+
+-- Crear índice para búsquedas por spotify_id
+CREATE INDEX IF NOT EXISTS idx_users_spotify_id ON users(spotify_id);
+
+-- Comentarios
+COMMENT ON COLUMN users.spotify_id IS 'ID único del usuario en Spotify';
+COMMENT ON COLUMN users.spotify_access_token IS 'Token de acceso de Spotify (encriptado)';
+COMMENT ON COLUMN users.spotify_refresh_token IS 'Token de refresco de Spotify (encriptado)';
+COMMENT ON COLUMN users.spotify_connected IS 'Indica si el usuario tiene conectada su cuenta de Spotify';
+
+
 -- Comentarios
 COMMENT ON TABLE saved_playlists IS 'Playlists guardadas por los usuarios';
 COMMENT ON VIEW user_history IS 'Vista consolidada del historial de análisis y playlists del usuario';
