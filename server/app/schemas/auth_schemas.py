@@ -42,7 +42,12 @@ class UserResponse(BaseModel):
     is_active: bool
     is_verified: bool
     created_at: datetime
-    
+
+    # Campos de Spotify
+    spotify_connected: bool = False
+    spotify_display_name: Optional[str] = None
+    spotify_email: Optional[str] = None
+
     class Config:
         from_attributes = True
 
