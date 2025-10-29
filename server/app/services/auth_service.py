@@ -48,7 +48,7 @@ class AuthService:
     @staticmethod
     def authenticate_user(username_or_email: str, password: str, db: Session) -> User:
         """Autentica un usuario por username o email"""
-        
+
         # Buscar usuario por username o email
         user = db.query(User).filter(
             or_(
@@ -56,30 +56,37 @@ class AuthService:
                 User.email == username_or_email
             )
         ).first()
-        
+
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Credenciales incorrectas"
             )
-        
+
         if not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Usuario inactivo"
             )
-        
+
+        # Si el usuario no tiene password_hash, solo puede iniciar sesión con Spotify
+        if not user.password_hash:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Esta cuenta solo puede iniciar sesión con Spotify"
+            )
+
         if not verify_password(password, user.password_hash):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Credenciales incorrectas"
             )
-        
+
         # Actualizar last_login
         # Usar datetime con zona horaria para columnas timezone-aware
         user.last_login = datetime.now(timezone.utc)
         db.commit()
-        
+
         return user
     
     @staticmethod
