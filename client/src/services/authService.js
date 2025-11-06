@@ -149,10 +149,61 @@ const logout = () => {
   clearSession();
 };
 
+/**
+ * Spotify / OAuth helpers
+ */
+const getSpotifyAuthUrl = async () => {
+  try {
+    const { data } = await api.get('/api/auth/spotify/login');
+    return data.authorization_url;
+  } catch (error) {
+    console.error('❌ [AuthService] Error obteniendo URL de Spotify:', error);
+    throw error;
+  }
+};
+
+const getSpotifyLinkUrl = async () => {
+  try {
+    const { data } = await api.get('/api/auth/spotify/link');
+    if (data.error) throw new Error(data.error);
+    return data.authorization_url;
+  } catch (error) {
+    console.error('❌ [AuthService] Error obteniendo URL de enlace Spotify:', error);
+    throw error;
+  }
+};
+
+const linkSpotify = async (code) => {
+  try {
+    // El endpoint espera el código como query param
+    const { data } = await api.post(`/api/auth/spotify/link/callback?code=${encodeURIComponent(code)}`);
+    // Devuelve TokenResponse con nuevo access_token y user
+    saveSession({ access_token: data.access_token, user: data.user });
+    return data;
+  } catch (error) {
+    console.error('❌ [AuthService] Error vinculando Spotify:', error);
+    throw error;
+  }
+};
+
+const disconnectSpotify = async () => {
+  try {
+    const { data } = await api.post('/api/auth/spotify/disconnect');
+    return data;
+  } catch (error) {
+    console.error('❌ [AuthService] Error desconectando Spotify:', error);
+    throw error;
+  }
+};
+
 export const authService = {
   login,
   register,
   me,
   logout,
   getStoredUser,
+  getSpotifyAuthUrl,
+  getSpotifyLinkUrl,
+  linkSpotify,
+  disconnectSpotify,
 };

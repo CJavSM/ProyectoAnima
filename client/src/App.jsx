@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
+import AuthCallback from './components/Auth/AuthCallback';
 import Home from './components/Home/Home';
 import Dashboard from './components/Dashboard/Dashboard';
 import HistoryPage from './components/HistoryPage/HistoryPage';
@@ -19,6 +20,9 @@ function App() {
           {/* Rutas públicas */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          {/* Backwards-compatible redirect: some Spotify apps may be configured with /callback */}
+          <Route path="/callback" element={<Navigate to="/auth/callback" replace />} />
           
           {/* Rutas protegidas */}
           <Route

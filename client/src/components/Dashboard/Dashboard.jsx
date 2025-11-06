@@ -1,6 +1,7 @@
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
+import { authService } from '../../services/authService';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -9,6 +10,28 @@ const Dashboard = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleConnectSpotify = async () => {
+    try {
+      const url = await authService.getSpotifyLinkUrl();
+      window.location.href = url;
+    } catch (e) {
+      console.error('Error obteniendo URL de enlace Spotify', e);
+      alert('No se pudo iniciar el enlace con Spotify');
+    }
+  };
+
+  const handleDisconnectSpotify = async () => {
+    try {
+      await authService.disconnectSpotify();
+      alert('Spotify desvinculado correctamente.');
+      // Forzar refresco de sesión
+      window.location.reload();
+    } catch (e) {
+      console.error('Error desconectando Spotify', e);
+      alert('No se pudo desvincular Spotify');
+    }
   };
 
   return (
@@ -66,6 +89,23 @@ const Dashboard = () => {
                   <span className={`badge ${user?.is_verified ? 'badge-success' : 'badge-warning'}`}>
                     {user?.is_verified ? '✓ Verificado' : '⏳ Pendiente de verificación'}
                   </span>
+                </p>
+              </div>
+              <div className="profile-field">
+                <span className="profile-label">Spotify</span>
+                <p className="profile-value">
+                  {user?.spotify_connected ? (
+                    <>
+                      <span className="badge badge-success">Conectado</span>
+                      <button onClick={handleDisconnectSpotify} className="btn btn-link" style={{ marginLeft: 8 }}>
+                        Desvincular
+                      </button>
+                    </>
+                  ) : (
+                    <button onClick={handleConnectSpotify} className="btn btn-secondary">
+                      Conectar con Spotify
+                    </button>
+                  )}
                 </p>
               </div>
             </div>

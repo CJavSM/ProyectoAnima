@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './Login.css';
+import { authService } from '../../services/authService';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -83,6 +84,24 @@ const Login = () => {
           >
             {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </button>
+
+          <div style={{ marginTop: 12 }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={async () => {
+                try {
+                  const url = await authService.getSpotifyAuthUrl();
+                  window.location.href = url;
+                } catch (e) {
+                  console.error('Error iniciando OAuth Spotify', e);
+                  alert('No se pudo iniciar autenticación con Spotify');
+                }
+              }}
+            >
+              Iniciar con Spotify
+            </button>
+          </div>
 
           <div className="login-footer">
             <p>

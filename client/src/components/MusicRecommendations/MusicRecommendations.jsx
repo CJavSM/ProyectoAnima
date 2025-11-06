@@ -1,15 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import musicService from '../../services/musicService';
+import { authService } from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 import historyService from '../../services/historyService';
 import emotionService from '../../services/emotionService';
 import './MusicRecommendations.css';
 
 const MusicRecommendations = ({ emotion, emotionColor, analysisId, onClose }) => {
+  const { user } = useAuth();
   const [recommendations, setRecommendations] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [playingPreview, setPlayingPreview] = useState(null);
   const [audioElement, setAudioElement] = useState(null);
+  const controllerRef = useRef(null);
   
   // Estados para guardar playlist
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -20,9 +24,15 @@ const MusicRecommendations = ({ emotion, emotionColor, analysisId, onClose }) =>
 
   useEffect(() => {
     loadRecommendations();
-    
-    // Cleanup: detener audio al desmontar
+
+    // Cleanup: cancelar petición y detener audio al desmontar
     return () => {
+      // Cancelar petición pendiente
+      if (controllerRef.current) {
+        try { controllerRef.current.abort(); } catch (e) {}
+        controllerRef.current = null;
+      }
+
       if (audioElement) {
         audioElement.pause();
         audioElement.src = '';
@@ -43,13 +53,27 @@ const MusicRecommendations = ({ emotion, emotionColor, analysisId, onClose }) =>
   const loadRecommendations = async () => {
     setLoading(true);
     setError('');
+    // Cancelar cualquier petición previa
+    if (controllerRef.current) {
+      try { controllerRef.current.abort(); } catch (e) {}
+      controllerRef.current = null;
+    }
 
-    const response = await musicService.getRecommendations(emotion, 20);
+    const controller = new AbortController();
+    controllerRef.current = controller;
+
+    const response = await musicService.getRecommendations(emotion, 20, { signal: controller.signal });
+
+    // Si la petición fue cancelada, no actualizar estado (evita carreras)
+    if (response.cancelled) {
+      return;
+    }
 
     if (response.success) {
       setRecommendations(response.data);
+      setError('');
     } else {
-      setError(response.error);
+      setError(response.error || 'Error al cargar recomendaciones');
     }
 
     setLoading(false);
@@ -159,6 +183,41 @@ const MusicRecommendations = ({ emotion, emotionColor, analysisId, onClose }) =>
               {emotionService.getEmotionEmoji(emotion)} Tu Playlist Personalizada
             </h2>
             <p className="music-subtitle">{recommendations?.playlist_description}</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {!user && (
+              <button
+                className="btn btn-secondary"
+                onClick={async () => {
+                  try {
+                    const url = await authService.getSpotifyAuthUrl();
+                    window.location.href = url;
+                  } catch (e) {
+                    console.error('Error iniciando OAuth Spotify', e);
+                    alert('No se pudo iniciar autenticación con Spotify');
+                  }
+                }}
+              >
+                Iniciar sesión con Spotify
+              </button>
+            )}
+
+            {user && !user.spotify_connected && (
+              <button
+                className="btn btn-secondary"
+                onClick={async () => {
+                  try {
+                    const url = await authService.getSpotifyLinkUrl();
+                    window.location.href = url;
+                  } catch (e) {
+                    console.error('Error iniciando enlace Spotify', e);
+                    alert('No se pudo iniciar enlace con Spotify');
+                  }
+                }}
+              >
+                Conectar con Spotify
+              </button>
+            )}
           </div>
           <button onClick={onClose} className="modal-close">✕</button>
         </div>

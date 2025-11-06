@@ -3,6 +3,8 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from app.config.database import get_db
 from app.controllers.auth_controller import AuthController
+from app.services.spotify_auth_service import spotify_auth_service
+import secrets
 from app.schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, UserResponse, MessageResponse
 from app.middlewares.auth_middleware import get_current_active_user
 from app.models.user import User
@@ -191,7 +193,16 @@ def spotify_link_url(
             "spotify_email": current_user.spotify_email
         }
 
-    return AuthController.spotify_login_url()
+    # Generar URL de autorización que redirija al frontend (sin query params).
+    # Usaremos el `state` para indicar que se trata de un "link" (prefijo 'link:').
+    frontend_redirect = os.getenv("SPOTIFY_FRONTEND_REDIRECT", "http://localhost:5173/auth/callback")
+
+    # Generar estado único y prefix 'link:' para que el frontend sepa interpretar
+    raw_state = secrets.token_urlsafe(24)
+    prefixed_state = f"link:{raw_state}"
+
+    auth_url, state = spotify_auth_service.get_authorization_url(state=prefixed_state, redirect_uri=frontend_redirect)
+    return {"authorization_url": auth_url, "state": state}
 
 @router.post(
     "/spotify/link/callback",

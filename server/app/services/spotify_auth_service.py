@@ -25,7 +25,8 @@ class SpotifyAuthService:
     Maneja registro, login y vinculación de cuentas.
     """
 
-    SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
+    # Use localized authorize endpoint that worked in the user's browser (/es/authorize)
+    SPOTIFY_AUTH_URL = "https://accounts.spotify.com/es/authorize"
     SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
     SPOTIFY_API_URL = "https://api.spotify.com/v1"
 
@@ -51,7 +52,7 @@ class SpotifyAuthService:
 
         logger.info("✅ SpotifyAuthService inicializado correctamente")
 
-    def get_authorization_url(self, state: Optional[str] = None) -> Tuple[str, str]:
+    def get_authorization_url(self, state: Optional[str] = None, redirect_uri: Optional[str] = None) -> Tuple[str, str]:
         """
         Genera la URL de autorización de Spotify.
 
@@ -67,7 +68,7 @@ class SpotifyAuthService:
         params = {
             "client_id": self.client_id,
             "response_type": "code",
-            "redirect_uri": self.redirect_uri,
+            "redirect_uri": redirect_uri or self.redirect_uri,
             "scope": " ".join(self.SPOTIFY_SCOPES),
             "state": state,
             "show_dialog": "false",  # No mostrar diálogo si ya autorizó previamente

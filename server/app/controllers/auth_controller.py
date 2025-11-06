@@ -61,9 +61,13 @@ class AuthController:
         except HTTPException as e:
             raise e
         except Exception as e:
+            # Log completo para debugging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.exception("Error inesperado en AuthController.login")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Error al iniciar sesión: {str(e)}"
+                detail="Error interno al iniciar sesión"
             )
     
     @staticmethod

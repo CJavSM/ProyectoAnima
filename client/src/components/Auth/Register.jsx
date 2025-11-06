@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './Register.css';
+import { authService } from '../../services/authService';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -162,6 +163,24 @@ const Register = () => {
           >
             {loading ? 'Registrando...' : 'Registrarse'}
           </button>
+
+          <div style={{ marginTop: 12 }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={async () => {
+                try {
+                  const url = await authService.getSpotifyAuthUrl();
+                  window.location.href = url;
+                } catch (e) {
+                  console.error('Error iniciando OAuth Spotify', e);
+                  alert('No se pudo iniciar registro con Spotify');
+                }
+              }}
+            >
+              Registrarse con Spotify
+            </button>
+          </div>
 
           <div className="register-footer">
             <p>

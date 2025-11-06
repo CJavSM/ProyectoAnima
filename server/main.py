@@ -98,6 +98,53 @@ def on_startup():
         # Probar conexión simple
         with engine.connect() as conn:
             conn.exec_driver_sql("SELECT 1")
+            # Aplicar migraciones ligeras: agregar columnas de Spotify si no existen
+            try:
+                conn.exec_driver_sql("""
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS spotify_id VARCHAR(255) UNIQUE,
+                ADD COLUMN IF NOT EXISTS spotify_email VARCHAR(255),
+                ADD COLUMN IF NOT EXISTS spotify_display_name VARCHAR(255),
+                ADD COLUMN IF NOT EXISTS spotify_access_token TEXT,
+                ADD COLUMN IF NOT EXISTS spotify_refresh_token TEXT,
+                ADD COLUMN IF NOT EXISTS spotify_token_expires_at TIMESTAMP WITH TIME ZONE,
+                ADD COLUMN IF NOT EXISTS spotify_connected BOOLEAN DEFAULT FALSE,
+                ADD COLUMN IF NOT EXISTS spotify_connected_at TIMESTAMP WITH TIME ZONE;
+                """)
+            except Exception:
+                # Algunos drivers/PG versions no permiten múltiples ADD COLUMN en una sola sentencia
+                try:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS spotify_id VARCHAR(255) UNIQUE;")
+                except Exception:
+                    pass
+                try:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS spotify_email VARCHAR(255);")
+                except Exception:
+                    pass
+                try:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS spotify_display_name VARCHAR(255);")
+                except Exception:
+                    pass
+                try:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS spotify_access_token TEXT;")
+                except Exception:
+                    pass
+                try:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS spotify_refresh_token TEXT;")
+                except Exception:
+                    pass
+                try:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS spotify_token_expires_at TIMESTAMP WITH TIME ZONE;")
+                except Exception:
+                    pass
+                try:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS spotify_connected BOOLEAN DEFAULT FALSE;")
+                except Exception:
+                    pass
+                try:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS spotify_connected_at TIMESTAMP WITH TIME ZONE;")
+                except Exception:
+                    pass
         
         logger.info("📊 Para verificar la conexión a la base de datos, visita /health/db")
 
